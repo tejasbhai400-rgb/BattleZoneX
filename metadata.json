@@ -1,0 +1,6 @@
+{
+  "name": "BattliX",
+  "description": "Esports tournament platform with live matches, wallet deposit/withdrawals, room ID unlock, referral system, and admin panel.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

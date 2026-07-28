@@ -1,0 +1,34 @@
+{
+  "project_info": {
+    "project_number": "715095444476",
+    "project_id": "ais-battlix-esports",
+    "storage_bucket": "ais-battlix-esports.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:715095444476:android:8f92a1b0c9e210a4",
+        "android_client_info": {
+          "package_name": "com.aistudio.battlix.esports"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "715095444476-battlix.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBattliXEsportsFirebaseSecretKeyForAndroid101"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

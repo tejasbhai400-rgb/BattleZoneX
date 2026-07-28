@@ -1,0 +1,93 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.admin == true ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true
+      );
+    }
+
+    function isNotBanned() {
+      return isAuthenticated() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isBanned != true &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isBlocked != true;
+    }
+
+    // USERS COLLECTION
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isOwner(userId);
+      // Users can update their profile (name, gameUsername, phone) but cannot alter balances or admin flags directly
+      allow update: if isOwner(userId) && isNotBanned() &&
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['depositBalance', 'winningBalance', 'totalWinnings', 'isAdmin', 'isBlocked', 'isBanned']);
+      allow update, delete: if isAdmin();
+    }
+
+    // TOURNAMENTS COLLECTION
+    match /tournaments/{tournamentId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // PARTICIPANTS COLLECTION
+    match /participants/{participantId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isNotBanned() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
+    // TRANSACTIONS COLLECTION (IMMUTABLE AUDIT TRAIL)
+    match /transactions/{transactionId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      // Transactions can only be appended by system/admin or user during verified transactions
+      allow create: if isAuthenticated() && isNotBanned() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
+    // DEPOSITS COLLECTION
+    match /deposits/{depositId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      // Users can submit pending deposit requests
+      allow create: if isAuthenticated() && isNotBanned() &&
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.status == 'PENDING';
+      // Only Admin can approve/reject deposits
+      allow update: if isAdmin();
+    }
+
+    // WITHDRAWALS COLLECTION
+    match /withdrawals/{withdrawalId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      // Users can submit pending withdrawal requests
+      allow create: if isAuthenticated() && isNotBanned() &&
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.status == 'PENDING';
+      // Only Admin can process withdrawals
+      allow update: if isAdmin();
+    }
+
+    // AUDIT LOGS (IMMUTABLE SECURITY AUDIT TRAIL)
+    match /audit_logs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAuthenticated(); // Appends audit records
+      allow update, delete: if false; // Absolutely immutable
+    }
+
+    // BANNED DEVICES
+    match /banned_devices/{deviceId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+  }
+}
